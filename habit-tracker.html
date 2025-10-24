@@ -478,6 +478,7 @@
                 this.storageKey = 'habitTrackerData';
                 this.passwordKey = 'habitTrackerPassword';
                 this.themeKey = 'habitTrackerTheme';  
+                this.themeIndex = -1;
                 this.defaultPassword = 'habit2025';
                 this.data = this.loadData();
                 this.passwordVerified = false;
@@ -873,11 +874,44 @@
             * Load saved theme or get random one
             */
             loadTheme() {
-                const saved = localStorage.getItem(this.themeKey);
+                let saved = localStorage.getItem(this.themeKey);
                 if (saved) {
-                    return JSON.parse(saved);
+                    saved = JSON.parse(saved);
+
+                    // get the themeIndex 
+                    if (this.themeIndex == -1) {
+                        
+                        const gradients = this.getMaterialGradients();
+
+                        for (const gradient of gradients) {
+                            this.themeIndex++;
+                            
+                            if (saved.primary == gradient[0] && saved.secondary == gradient[1]) 
+                                break;  
+                            
+                        }
+                    }
+                   
                 }
-                return this.getMaterialGradients();
+                return this.fetchTheme();
+            }
+
+            /**
+            * Get a random theme
+            */
+            fetchTheme() {
+                const gradients = this.getMaterialGradients();
+                
+                if(this.themeIndex == gradients.length - 1 || this.themeIndex == -1)
+                    this.themeIndex = 0;
+                
+                const random = gradients[this.themeIndex];
+                
+                this.themeIndex++;
+                return {
+                    primary: random[0],
+                    secondary: random[1]
+                };
             }
 
             /**
@@ -909,7 +943,7 @@
             * Change to random theme
             */
             changeTheme() {
-                this.currentTheme = this.getMaterialGradients();
+                this.currentTheme = this.fetchTheme();
                 this.applyTheme();
             }
             
