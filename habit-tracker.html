@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker: Exercise Daily</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-success:active {
+            transform: translateY(0);
+        }
+
+        .btn-success:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-manual {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-manual:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #4b5563;
+        }
+
+        .btn-submit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background: #2563eb;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .today-status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .today-status.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .today-status.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h2 {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .history-date {
+            color: #666;
+        }
+
+        .history-badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .btn-reset {
+            width: 100%;
+            background: #6b7280;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .btn-reset:hover {
+            background: #4b5563;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Exercise Daily</h1>
+        <p class="subtitle">Build consistency, one day at a time</p>
+
+        <div class="today-status" id="todayStatus">
+            <span id="statusText">Ready to mark today?</span>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <span class="stat-value" id="currentStreak">0</span>
+                <span class="stat-label">Current Streak</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="totalDays">0</span>
+                <span class="stat-label">Total Days</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn-success" id="markTodayBtn">
+                ✓ Mark Today Complete
+            </button>
+        </div>
+        <div style="display: grid; place-items: center;;">
+            <a href="#" id="manualEntryBtn" style="text-decoration: none">📅 Manual Entry</a>
+        </div>
+        <div class="history">
+            <h2>Recent History</h2>
+            <div class="history-list" id="historyList">
+                <p style="text-align: center; color: #999;">No history yet. Start today!</p>
+            </div>
+        </div>
+
+        <button class="btn-reset btn-danger" id="resetBtn">
+            Reset All Data
+        </button>
+    </div>
+
+    <!-- Manual Entry Modal -->
+    <div class="modal" id="manualEntryModal">
+        <div class="modal-content">
+            <h3 class="modal-header">🔒 Manual Entry</h3>
+            <form id="manualEntryForm">
+                <div class="form-group">
+                    <label class="form-label" for="passwordInput">Password</label>
+                    <input 
+                        type="password" 
+                        class="form-input" 
+                        id="passwordInput" 
+                        placeholder="Enter password"
+                        autocomplete="off"
+                    >
+                    <div class="error-message" id="passwordError">Incorrect password</div>
+                </div>
+                <div class="form-group" id="dateInputGroup" style="display: none;">
+                    <label class="form-label" for="dateInput">Date</label>
+                    <input 
+                        type="date" 
+                        class="form-input" 
+                        id="dateInput"
+                    >
+                    <div class="error-message" id="dateError">This date is already marked</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-submit" id="submitBtn">Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * HabitTracker - A simple habit tracking application with localStorage persistence
+         * Follows best practices: Single Responsibility, DRY, and clear separation of concerns
+         */
+        class HabitTracker {
+            constructor() {
+                this.storageKey = 'habitTrackerData';
+                this.passwordKey = 'habitTrackerPassword';
+                // Default password - CHANGE THIS for security!
+                this.defaultPassword = 'habit2025';
+                this.data = this.loadData();
+                this.passwordVerified = false;
+                this.init();
+            }
+
+            /**
+             * Initialize the application by setting up event listeners and rendering
+             */
+            init() {
+                this.bindEvents();
+                this.render();
+            }
+
+            /**
+             * Load data from localStorage with fallback to default structure
+             */
+            loadData() {
+                try {
+                    const stored = localStorage.getItem(this.storageKey);
+                    return stored ? JSON.parse(stored) : this.getDefaultData();
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    return this.getDefaultData();
+                }
+            }
+
+            /**
+             * Get default data structure
+             */
+            getDefaultData() {
+                return {
+                    completedDates: [],
+                    currentStreak: 0,
+                    longestStreak: 0
+                };
+            }
+
+            /**
+             * Save data to localStorage
+             */
+            saveData() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.data));
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    alert('Failed to save data. Please check your browser settings.');
+                }
+            }
+
+            /**
+             * Get stored password or return default
+             */
+            getPassword() {
+                const stored = localStorage.getItem(this.passwordKey);
+                if (!stored) {
+                    // Set default password on first run
+                    this.setPassword(this.defaultPassword);
+                    return this.defaultPassword;
+                }
+                return stored;
+            }
+
+            /**
+             * Set a new password
+             */
+            setPassword(password) {
+                localStorage.setItem(this.passwordKey, password);
+            }
+
+            /**
+             * Verify password
+             */
+            verifyPassword(inputPassword) {
+                return inputPassword === this.getPassword();
+            }
+
+            /**
+             * Get today's date in YYYY-MM-DD format
+             */
+            getTodayDate() {
+                return new Date().toISOString().split('T')[0];
+            }
+
+            /**
+             * Check if today is already marked
+             */
+            isTodayCompleted() {
+                return this.data.completedDates.includes(this.getTodayDate());
+            }
+
+            /**
+             * Mark today as completed
+             */
+            markToday() {
+                const today = this.getTodayDate();
+                
+                if (this.isTodayCompleted()) {
+                    return false;
+                }
+
+                this.data.completedDates.push(today);
+                this.data.completedDates.sort();
+                this.calculateStreak();
+                this.saveData();
+                return true;
+            }
+
+            /**
+             * Add a manual date entry
+             */
+            addManualDate(dateString) {
+                if (this.data.completedDates.includes(dateString)) {
+                    return { success: false, message: 'This date is already marked' };
+                }
+
+                this.data.completedDates.push(dateString);
+                this.data.completedDates.sort();
+                this.calculateStreak();
+                this.saveData();
+                return { success: true, message: 'Date added successfully' };
+            }
+
+            /**
+             * Calculate current streak based on consecutive days
+             */
+            calculateStreak() {
+                if (this.data.completedDates.length === 0) {
+                    this.data.currentStreak = 0;
+                    return;
+                }
+
+                const sortedDates = [...this.data.completedDates].sort().reverse();
+                let streak = 0;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                for (let i = 0; i < sortedDates.length; i++) {
+                    const checkDate = new Date(sortedDates[i]);
+                    checkDate.setHours(0, 0, 0, 0);
+                    
+                    const expectedDate = new Date(today);
+                    expectedDate.setDate(today.getDate() - streak);
+                    expectedDate.setHours(0, 0, 0, 0);
+
+                    if (checkDate.getTime() === expectedDate.getTime()) {
+                        streak++;
+                    } else {
+                        break;
+                    }
+                }
+
+                this.data.currentStreak = streak;
+                
+                if (streak > this.data.longestStreak) {
+                    this.data.longestStreak = streak;
+                }
+            }
+
+            /**
+             * Reset all data
+             */
+            resetData() {
+                if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                    this.data = this.getDefaultData();
+                    this.saveData();
+                    this.render();
+                }
+            }
+
+            /**
+             * Format date for display
+             */
+            formatDate(dateString) {
+                const date = new Date(dateString + 'T00:00:00');
+                const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            }
+
+            /**
+             * Bind event listeners
+             */
+            bindEvents() {
+                // Mark today button
+                document.getElementById('markTodayBtn').addEventListener('click', () => {
+                    if (this.markToday()) {
+                        this.render();
+                    }
+                });
+
+                // Manual entry button
+                document.getElementById('manualEntryBtn').addEventListener('click', () => {
+                    this.openManualEntryModal();
+                });
+
+                // Reset button
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.resetData();
+                });
+
+                // Modal cancel button
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    this.closeManualEntryModal();
+                });
+
+                // Modal form submission
+                document.getElementById('manualEntryForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleManualEntrySubmit();
+                });
+
+                // Close modal when clicking outside
+                document.getElementById('manualEntryModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'manualEntryModal') {
+                        this.closeManualEntryModal();
+                    }
+                });
+            }
+
+            /**
+             * Open manual entry modal
+             */
+            openManualEntryModal() {
+                this.passwordVerified = false;
+                document.getElementById('manualEntryModal').classList.add('active');
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('dateInput').value = '';
+                document.getElementById('dateInputGroup').style.display = 'none';
+                document.getElementById('passwordError').classList.remove('active');
+                document.getElementById('dateError').classList.remove('active');
+                document.getElementById('submitBtn').textContent = 'Verify';
+                document.getElementById('passwordInput').focus();
+            }
+
+            /**
+             * Close manual entry modal
+             */
+            closeManualEntryModal() {
+                document.getElementById('manualEntryModal').classList.remove('active');
+                this.passwordVerified = false;
+            }
+
+            /**
+             * Handle manual entry form submission
+             */
+            handleManualEntrySubmit() {
+                if (!this.passwordVerified) {
+                    // First step: verify password
+                    const password = document.getElementById('passwordInput').value;
+                    
+                    if (this.verifyPassword(password)) {
+                        this.passwordVerified = true;
+                        document.getElementById('passwordError').classList.remove('active');
+                        document.getElementById('dateInputGroup').style.display = 'block';
+                        document.getElementById('submitBtn').textContent = 'Add Date';
+                        document.getElementById('dateInput').focus();
+                        
+                        // Set max date to today
+                        document.getElementById('dateInput').max = this.getTodayDate();
+                    } else {
+                        document.getElementById('passwordError').classList.add('active');
+                    }
+                } else {
+                    // Second step: add the date
+                    const dateInput = document.getElementById('dateInput').value;
+                    
+                    if (!dateInput) {
+                        document.getElementById('dateError').textContent = 'Please select a date';
+                        document.getElementById('dateError').classList.add('active');
+                        return;
+                    }
+
+                    const result = this.addManualDate(dateInput);
+                    
+                    if (result.success) {
+                        this.closeManualEntryModal();
+                        this.render();
+                    } else {
+                        document.getElementById('dateError').textContent = result.message;
+                        document.getElementById('dateError').classList.add('active');
+                    }
+                }
+            }
+
+            /**
+             * Render the entire UI
+             */
+            render() {
+                this.renderStats();
+                this.renderTodayStatus();
+                this.renderHistory();
+            }
+
+            /**
+             * Render statistics
+             */
+            renderStats() {
+                document.getElementById('currentStreak').textContent = this.data.currentStreak;
+                document.getElementById('totalDays').textContent = this.data.completedDates.length;
+            }
+
+            /**
+             * Render today's status
+             */
+            renderTodayStatus() {
+                const statusEl = document.getElementById('todayStatus');
+                const statusText = document.getElementById('statusText');
+                const markBtn = document.getElementById('markTodayBtn');
+
+                if (this.isTodayCompleted()) {
+                    statusEl.className = 'today-status completed';
+                    statusText.textContent = '✓ Today is complete! Great job!';
+                    markBtn.disabled = true;
+                    markBtn.textContent = '✓ Already Completed Today';
+                } else {
+                    statusEl.className = 'today-status pending';
+                    statusText.textContent = 'Ready to mark today?';
+                    markBtn.disabled = false;
+                    markBtn.textContent = '✓ Mark Today Complete';
+                }
+            }
+
+            /**
+             * Render history list
+             */
+            renderHistory() {
+                const historyList = document.getElementById('historyList');
+                
+                if (this.data.completedDates.length === 0) {
+                    historyList.innerHTML = '<p style="text-align: center; color: #999;">No history yet. Start today!</p>';
+                    return;
+                }
+
+                const recentDates = [...this.data.completedDates].reverse().slice(0, 10);
+                
+                historyList.innerHTML = recentDates.map(date => `
+                    <div class="history-item">
+                        <span class="history-date">${this.formatDate(date)}</span>
+                        <span class="history-badge">Completed</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new HabitTracker();
+        });
+    </script>
+</body>
+</html>
