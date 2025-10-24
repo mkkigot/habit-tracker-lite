@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Tracker: Exercise Daily</title>
+    <title>Habit Tracker</title>
     <style>
         * {
             margin: 0;
@@ -338,6 +338,20 @@
             border-color: #fecaca;
         }
 
+        .btn-theme {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .btn-theme:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 30px 20px;
@@ -355,7 +369,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Exercise Daily</h1>
+        <h1 id="headerMain">🎯 <span id="habitHeader">Habit Tracker</span></h1>
         <p class="subtitle">Build consistency, one day at a time</p>
 
         <div class="today-status" id="todayStatus">
@@ -395,6 +409,9 @@
         </div>
         
         <button class="btn-boring" id="resetBtn">Reset All Data</button>
+        <button class="btn-theme" id="themeBtn">
+            🎨 Change Theme
+        </button>
     </div>
 
     <!-- Manual Entry Modal -->
@@ -430,6 +447,27 @@
         </div>
     </div>
 
+     <!-- Set Habit Tracker Header -->
+    <div class="modal" id="setHabitTrackerHeaderModal">
+        <div class="modal-content">
+            <h3 class="modal-header">🎯 Set a new Habit Header</h3>
+            <form id="setHabitTrackerHeaderForm">
+                <div class="form-group">
+                    <label class="form-label" for="headerHabitInput">Habit</label>
+                    <input 
+                        id="headerHabitInput"
+                        type="text" 
+                        class="form-input" 
+                        autocomplete="off">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="cancelChangeHeaderBtn">Cancel</button>
+                    <button type="submit" class="btn-submit" id="changeHeaderBtn">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         /**
          * HabitTracker - A simple habit tracking application with localStorage persistence
@@ -439,10 +477,12 @@
             constructor() {
                 this.storageKey = 'habitTrackerData';
                 this.passwordKey = 'habitTrackerPassword';
-                // Default password - CHANGE THIS for security!
+                this.themeKey = 'habitTrackerTheme';  
                 this.defaultPassword = 'habit2025';
                 this.data = this.loadData();
                 this.passwordVerified = false;
+                this.currentTheme = this.loadTheme(); 
+                this.habitHeader = this.loadHabitHeader();
                 this.init();
             }
 
@@ -451,6 +491,7 @@
              */
             init() {
                 this.bindEvents();
+                this.applyTheme();
                 this.render();
             }
 
@@ -474,7 +515,8 @@
                 return {
                     completedDates: [],
                     currentStreak: 0,
-                    longestStreak: 0
+                    longestStreak: 0,
+                    habit: 'Habit Tracker'
                 };
             }
 
@@ -657,6 +699,27 @@
                         this.closeManualEntryModal();
                     }
                 });
+
+                // Theme button
+                document.getElementById('themeBtn').addEventListener('click', () => {
+                    this.changeTheme();
+                });
+
+                // Manual entry button
+                document.getElementById('headerMain').addEventListener('click', () => {
+                    this.openChangeHeaderModal();
+                });
+                
+                // Modal form submission - header
+                document.getElementById('setHabitTrackerHeaderForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleChangeHeaderSubmit();
+                });
+
+                // Modal cancel button
+                document.getElementById('cancelChangeHeaderBtn').addEventListener('click', () => {
+                    this.closeChangeHeaderModal();
+                });
             }
 
             /**
@@ -782,6 +845,105 @@
                         <span class="history-badge">Completed</span>
                     </div>
                 `).join('');
+            }
+            /**
+            * Material Design gradient combinations
+            */
+            getMaterialGradients() {
+                return [
+                    ['#30cfd0', '#330867'],  // Ocean    
+                    ['#667eea', '#764ba2'],  // Purple
+                    ['#f093fb', '#f5576c'],  // Pink
+                    ['#4facfe', '#00f2fe'],  // Blue
+                    ['#43e97b', '#38f9d7'],  // Green
+                    ['#fa709a', '#fee140'],  // Sunset
+                    ['#a8edea', '#fed6e3'],  // Pastel
+                    ['#ff9a56', '#ff6a88'],  // Orange
+                    ['#ffecd2', '#fcb69f'],  // Peach
+                    ['#ff6e7f', '#bfe9ff'],  // Coral
+                    ['#e0c3fc', '#8ec5fc'],  // Lavender
+                    ['#f97794', '#623aa2'],  // Magenta
+                    ['#96fbc4', '#f9f586'],  // Lime
+                    ['#fddb92', '#d1fdff'],  // Yellow
+                    ['#9890e3', '#b1f4cf'],  // Mint
+                ];
+            }
+
+            /**
+            * Load saved theme or get random one
+            */
+            loadTheme() {
+                const saved = localStorage.getItem(this.themeKey);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return this.getMaterialGradients();
+            }
+
+            /**
+            * Apply theme to page
+            */
+            applyTheme() {
+                const gradient = `linear-gradient(135deg, ${this.currentTheme.primary} 0%, ${this.currentTheme.secondary} 100%)`;
+                
+                // Update body background
+                document.body.style.background = gradient;
+                
+                // Update primary stat card
+                const statCardLarge = document.querySelector('.stat-card-large');
+                if (statCardLarge) {
+                    statCardLarge.style.background = gradient;
+                }
+                
+                // Update theme button
+                const themeBtn = document.getElementById('themeBtn');
+                if (themeBtn) {
+                    themeBtn.style.background = gradient;
+                }
+                
+                // Save theme
+                localStorage.setItem(this.themeKey, JSON.stringify(this.currentTheme));
+            }
+
+            /**
+            * Change to random theme
+            */
+            changeTheme() {
+                this.currentTheme = this.getMaterialGradients();
+                this.applyTheme();
+            }
+            
+            /**
+             * Open manual entry modal
+             */
+            openChangeHeaderModal() {
+                document.getElementById('setHabitTrackerHeaderModal').classList.add('active');
+                document.getElementById('headerHabitInput').value = '';
+            }
+
+             /**
+             * Close change header entry modal
+             */
+            closeChangeHeaderModal() {
+                document.getElementById('setHabitTrackerHeaderModal').classList.remove('active');
+            }
+
+            /**
+             * Handle change header form submission
+             */
+            handleChangeHeaderSubmit() {
+                const newHabit = document.getElementById('headerHabitInput').value;
+                document.getElementById('habitHeader').textContent = newHabit;
+                localStorage.setItem('habit', newHabit);
+                document.title = "Habit Tracker: "+newHabit;
+                this.closeChangeHeaderModal();
+            }
+
+            loadHabitHeader() {
+                const habitHeader = localStorage.getItem('habit');
+                
+                if(habitHeader)
+                    document.getElementById('habitHeader').textContent = habitHeader;
             }
         }
 
