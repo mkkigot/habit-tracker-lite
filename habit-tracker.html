@@ -369,9 +369,12 @@
 </head>
 <body>
     <div class="container">
-        <h1 id="headerMain">🎯 <span id="habitHeader">Habit Tracker</span></h1>
-        <p class="subtitle">Build consistency, one day at a time</p>
-
+        <h1 id="headerMain" style="margin-left: -20px;">🎯 <span id="habitHeader">Habit Tracker</span></h1>
+        <p class="subtitle">Build consistency, one day at a time
+            </br>
+            <small  id="dateTodayText"></small>
+        </p>
+        
         <div class="today-status" id="todayStatus">
             <span id="statusText">Ready to mark today?</span>
         </div>
@@ -494,6 +497,10 @@
                 this.bindEvents();
                 this.applyTheme();
                 this.render();
+                
+                // Start live clock update every minute
+                this.updateDateTime(); // Initial update
+                setInterval(() => this.updateDateTime(), 60000); // Update every 60 seconds
             }
 
             /**
@@ -564,7 +571,45 @@
              * Get today's date in YYYY-MM-DD format
              */
             getTodayDate() {
-                return new Date().toISOString().split('T')[0];
+                return new Date().toISOString('en-CA', {
+                    timeZone: 'Asia/Singapore'
+                }).split('T')[0];
+            }
+
+            getTodayDateTZ() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+                const monthName = today.toLocaleDateString('en-US', { month: 'long' });
+                
+                // Get time components in 12-hour format
+                let hours = today.getHours();
+                const minutes = String(today.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // Convert 0 to 12
+                const hoursStr = String(hours).padStart(2, '0');
+                
+                return `${dayName}, ${monthName} ${day}, ${year} • ${hoursStr}:${minutes} ${ampm}`;
+            }
+
+            /**
+             * Update date and time display
+             */
+            updateDateTime() {
+                // Check if the date has changed
+                const currentDate = this.getTodayDate();
+                if (this.lastCheckedDate && this.lastCheckedDate !== currentDate) {
+                    // Date changed! Re-render to update today's status
+                    console.log('Date changed - refreshing display');
+                    this.render();
+                }
+                this.lastCheckedDate = currentDate;
+                
+                // Update the display with current date and time
+                document.getElementById('dateTodayText').textContent = this.getTodayDateTZ();
             }
 
             /**
@@ -606,10 +651,31 @@
                 return { success: true, message: 'Date added successfully' };
             }
 
+            // Helper function to get today's date in Singapore timezone as YYYY-MM-DD
+            getSingaporeDate() {
+                return new Date().toLocaleDateString('en-CA', {
+                    timeZone: 'Asia/Singapore'
+                });
+            }
+
+            // Helper function to subtract days from a date string
+            subtractDays(dateString, days) {
+                const date = new Date(dateString + 'T00:00:00');
+                const sgTime = new Date(date.toLocaleString('en-US', {
+                    timeZone: 'Asia/Singapore'
+                }));
+                sgTime.setDate(sgTime.getDate() - days);
+                
+                const year = sgTime.getFullYear();
+                const month = String(sgTime.getMonth() + 1).padStart(2, '0');
+                const day = String(sgTime.getDate()).padStart(2, '0');
+            }
+        
+            
             /**
              * Calculate current streak based on consecutive days
              */
-            calculateStreak() {
+           calculateStreak() {
                 if (this.data.completedDates.length === 0) {
                     this.data.currentStreak = 0;
                     return;
@@ -617,18 +683,17 @@
 
                 const sortedDates = [...this.data.completedDates].sort().reverse();
                 let streak = 0;
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                
+                // Get today's date in Singapore timezone
+                const today = this.getSingaporeDate();
 
                 for (let i = 0; i < sortedDates.length; i++) {
-                    const checkDate = new Date(sortedDates[i]);
-                    checkDate.setHours(0, 0, 0, 0);
+                    const checkDate = sortedDates[i]; // Already in YYYY-MM-DD format
                     
-                    const expectedDate = new Date(today);
-                    expectedDate.setDate(today.getDate() - streak);
-                    expectedDate.setHours(0, 0, 0, 0);
+                    // Calculate expected date by subtracting days
+                    const expectedDate = this.subtractDays(today, streak);
 
-                    if (checkDate.getTime() === expectedDate.getTime()) {
+                    if (checkDate === expectedDate) {
                         streak++;
                     } else {
                         break;
@@ -641,7 +706,6 @@
                     this.data.longestStreak = streak;
                 }
             }
-
             /**
              * Reset all data
              */
@@ -658,7 +722,7 @@
              */
             formatDate(dateString) {
                 const date = new Date(dateString + 'T00:00:00');
-                const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'Asia/Singapore' };
                 return date.toLocaleDateString('en-US', options);
             }
 
@@ -825,6 +889,8 @@
                     markBtn.disabled = false;
                     markBtn.textContent = '✓ Mark Today Complete';
                 }
+
+                document.getElementById('dateTodayText').textContent = this.getTodayDateTZ();
             }
 
             /**
