@@ -399,10 +399,11 @@
         <div class="actions">
             <button class="btn-success" id="markTodayBtn">
                 ✓ Mark Today Complete
-            </button>
+            </button>            
         </div>
         <div style="display: grid; place-items: center;">
             <a href="#" id="manualEntryBtn" style="text-decoration: none">📅 Manual Entry</a>
+            <a href="#" id="recalculateSreaksBtn" style="text-decoration: none">🧮 Recalculate</a>
         </div>
         <div class="history">
             <h2>Recent History</h2>
@@ -497,10 +498,6 @@
                 this.bindEvents();
                 this.applyTheme();
                 this.render();
-                
-                // Start live clock update every minute
-                this.updateDateTime(); // Initial update
-                setInterval(() => this.updateDateTime(), 60000); // Update every 60 seconds
             }
 
             /**
@@ -629,8 +626,8 @@
                     return false;
                 }
 
-                this.data.completedDates.push(today);
-                this.data.completedDates.sort();
+                this.data.completedDates.unshift(today);
+                // this.data.completedDates.sort();
                 this.calculateStreak();
                 this.saveData();
                 return true;
@@ -645,7 +642,7 @@
                 }
 
                 this.data.completedDates.push(dateString);
-                this.data.completedDates.sort();
+                this.data.completedDates.sort().reverse();
                 this.calculateStreak();
                 this.saveData();
                 return { success: true, message: 'Date added successfully' };
@@ -680,24 +677,19 @@
                     this.data.currentStreak = 0;
                     return;
                 }
-
-                const sortedDates = [...this.data.completedDates].sort().reverse();
-                let streak = 0;
                 
-                // Get today's date in Singapore timezone
-                const today = this.getSingaporeDate();
+                let streak = 1;
+                let lastDate = this.data.completedDates[0];
+                
+                for (let i = 1; i < this.data.completedDates.length; i++) {
+                    const diff  = ( new Date(lastDate) - new Date(this.data.completedDates[i])) / (1000 * 60 * 60 * 24); // convert milliseconds to days as a number
 
-                for (let i = 0; i < sortedDates.length; i++) {
-                    const checkDate = sortedDates[i]; // Already in YYYY-MM-DD format
-                    
-                    // Calculate expected date by subtracting days
-                    const expectedDate = this.subtractDays(today, streak);
-
-                    if (checkDate === expectedDate) {
+                    if (diff == 1) {
                         streak++;
-                    } else {
-                        break;
+                        lastDate = this.data.completedDates[i];
                     }
+                    else
+                        break;
                 }
 
                 this.data.currentStreak = streak;
@@ -730,6 +722,10 @@
              * Bind event listeners
              */
             bindEvents() {
+                
+                document.getElementById('recalculateSreaksBtn').addEventListener('click', () => {
+                    this.recalculateData();
+                });
                 // Mark today button
                 document.getElementById('markTodayBtn').addEventListener('click', () => {
                     if (this.markToday()) {
@@ -859,6 +855,18 @@
                 this.renderStats();
                 this.renderTodayStatus();
                 this.renderHistory();
+                // Start live clock update every minute
+                this.updateDateTime(); // Initial update
+                setInterval(() => this.updateDateTime(), 60000); // Update every 60 seconds
+            }
+
+            recalculateData() {
+                this.data.completedDates.sort();
+                this.data.completedDates.reverse();
+
+                this.calculateStreak();
+                this.saveData();
+                this.render();
             }
 
             /**
@@ -904,7 +912,7 @@
                     return;
                 }
 
-                const recentDates = [...this.data.completedDates].reverse().slice(0, 10);
+                const recentDates = [...this.data.completedDates];//.reverse().slice(0, 10);
                 
                 historyList.innerHTML = recentDates.map(date => `
                     <div class="history-item">
